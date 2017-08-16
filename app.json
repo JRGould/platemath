@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "PlateMath",
+    "description": "Math is hard, bro. Use Plate Math to figure out what plates to put on your bar.",
+    "slug": "platemath",
+    "privacy": "public",
+    "sdkVersion": "18.0.0",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "primaryColor": "#cccccc",
+    "icon": "./assets/icons/app.png",
+    "loading": {
+      "icon": "./assets/icons/loading.png",
+      "hideExponentText": false
+    },
+    "packagerOpts": {
+      "assetExts": ["ttf", "mp4"]
+    },
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}
