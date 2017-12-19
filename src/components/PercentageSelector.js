@@ -71,15 +71,16 @@ class PercentageSelector extends React.Component {
 	}
 
 	getSelectedPercentX( selectedPercent ) {
-		const selectedPercentLayout = this.itemLayouts[ selectedPercent ] || {x: 0, width: 0};
-		const hx = selectedPercentLayout.x;
-		const percentItemWidth = selectedPercentLayout.width;
-		const svMaxScroll = this.scrollViewContentWidth - this.scrollViewWidth;
-		const svMinScroll = 0
-		const scrollViewCenterOffset = ( this.scrollViewWidth / 2 ) - ( percentItemWidth / 2 ) +10; //to offset the x box... TODO: need a better solution
+		const selectedPercentLayout    = this.itemLayouts[ selectedPercent ] || {x: 0, width: 0};
+		const selectedPercentItemX     = selectedPercentLayout.x;
+		const selectedPercentItemWidth = selectedPercentLayout.width;
+		const svMaxScroll              = this.scrollViewContentWidth - this.scrollViewWidth;
+		const svMinScroll              = 0
+		const scrollViewCenterOffset   = ( this.scrollViewWidth / 2 ) - ( selectedPercentItemWidth / 2 ) +10; //to offset the x box... TODO: need a better solution
+		
 		const x = Math.min( svMaxScroll,
-				  Math.max( svMinScroll,
-				  (hx||0) - (scrollViewCenterOffset||0) )
+				  	Math.max( svMinScroll,
+				  		(selectedPercentItemX||0) + (selectedPercentItemWidth/2) )
 				);
 		return x;
 
