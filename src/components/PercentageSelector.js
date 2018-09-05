@@ -35,7 +35,7 @@ class PercentageSelector extends React.Component {
 			oldIndex: 0,
 			currentIndex: 0,
 			selectedIndex: 11,
-			selectedPercent: 100,
+			selectedPercent: this.props.selectedPercent,
 			isVisible: this.props.isVisible || false,
 		};
 	}
@@ -50,7 +50,10 @@ class PercentageSelector extends React.Component {
 
 	componentWillReceiveProps( nextProps ) {
 		if( this.props !== nextProps ) {
-			this.setState( { isVisible: nextProps.isVisible });
+			this.setState( {
+				isVisible: nextProps.isVisible,
+				selectedPercent: nextProps.selectedPercent
+			});
 		}
 	}
 
@@ -62,8 +65,7 @@ class PercentageSelector extends React.Component {
 	}
 
 	setSelectedPercent( selectedPercent, scroll = true ) {
-		this.setState( { selectedPercent } );
-		this.props.applyPercentage( selectedPercent / 100 );
+		this.props.applyPercentage( selectedPercent );
 
 		if ( scroll ) {
 			this.scrollToSelectedPercent( selectedPercent )
@@ -76,17 +78,18 @@ class PercentageSelector extends React.Component {
 		const selectedPercentItemWidth = selectedPercentLayout.width;
 		const svMaxScroll              = this.scrollViewContentWidth - this.scrollViewWidth;
 		const svMinScroll              = 0
-		const scrollViewCenterOffset   = ( this.scrollViewWidth / 2 ) - ( selectedPercentItemWidth / 2 ) +10; //to offset the x box... TODO: need a better solution
+		const scrollViewCenterOffset   = ( this.scrollViewWidth / 2 ) - ( selectedPercentItemWidth / 2 )  +20; //to offset the x box... TODO: need a better solution
 		
 		const x = Math.min( svMaxScroll,
 				  	Math.max( svMinScroll,
-				  		(selectedPercentItemX||0) + (selectedPercentItemWidth/2) )
+				  		(selectedPercentItemX||0) -+ (scrollViewCenterOffset||0) )
 				);
 		return x;
 
 	}
 
 	scrollToSelectedPercent( selectedPercent, animated = true ) {
+		console.log( 'scrolling to selected percent', selectedPercent, animated )
 		if( this.scrollViewRef ) {
 			if( animated ) {
 				this.animatingScroll = true;
@@ -106,20 +109,37 @@ class PercentageSelector extends React.Component {
 
 	onScroll = (e) => {
 		const currentX = e.nativeEvent.contentOffset.x;
-		const currentCenterX = currentX + ( this.scrollViewWidth / 2 ) + 10;
+		const currentCenterX = currentX + ( this.scrollViewWidth / 2 ) + 20;
 		const percentItemWidth = this.itemLayouts[100].width
-		const item = Object.keys( this.itemLayouts ).reverse()[ Math.floor( currentCenterX / percentItemWidth ) ] || 100;
+		let item = Object.keys( this.itemLayouts ).reverse()[ Math.floor( currentCenterX / percentItemWidth ) ] || 100;
+		const itemInt = parseInt(item, 10)
+		if ( itemInt < this.min ) {
+			item = this.min
+		} else if ( itemInt > this.max ) {
+			item = this.max
+		}
 
 		if( ! this.animatingScroll ) {
 			this.setSelectedPercent( item, false );
 			clearTimeout( this.percentSelectTimeoutObj );
-			this.percentSelectTimeoutObj = setTimeout( () => this.scrollToSelectedPercent( item, true ), 300 );
+			this.percentSelectTimeoutObj = setTimeout( () => this.scrollToSelectedPercent( item, true ), 100 );
 		}
 
 	}
 
 	renderPercentages() {
-		const ret = [];
+		const ret = []
+		const paddingItems = 4
+		for ( let i = 0; i < paddingItems; i++ ) {
+			ret.push(
+				<View key={ i } style={ styles.percentItem }
+				onLayout={ (e) => {
+					this.itemLayouts[i] = e.nativeEvent.layout;
+				}}
+				></View>
+			)
+		}
+
 		for ( let i = this.min; i <= this.max; i += this.step ) {
 			ret.push(
 				<View key={ i } style={ styles.percentItem }
@@ -132,6 +152,16 @@ class PercentageSelector extends React.Component {
 					</TouchableHighlight>
 				</View>
 			);
+		}
+		
+		for ( let i = 1000; i < paddingItems+1000; i++ ) {
+			ret.push(
+				<View key={ i } style={ styles.percentItem }
+				onLayout={ (e) => {
+					this.itemLayouts[i] = e.nativeEvent.layout;
+				}}
+				></View>
+			)
 		}
 
 		return ( ret.reverse() );
@@ -156,7 +186,6 @@ class PercentageSelector extends React.Component {
 				onScroll={ this.onScroll }
 				onLayout={ (e) => {
 					this.scrollViewWidth = e.nativeEvent.layout.width;
-					setImmediate( () => this.scrollToSelectedPercent( this.state.selectedPercent, false ) );
 				} }
 				ref={ c => this.scrollViewRef = c }
 				style={ styles.scrollView }
@@ -165,7 +194,7 @@ class PercentageSelector extends React.Component {
 					onLayout={ (e) => {
 						this.scrollViewContentWidth = e.nativeEvent.layout.width;
 						console.log( e.nativeEvent.layout )
-						setImmediate( () => this.scrollToSelectedPercent( this.state.selectedPercent, false ) );
+						setTimeout( () => this.scrollToSelectedPercent( this.state.selectedPercent, false ), 0 );
 					} }
 					>
 						{ this.renderPercentages() }
@@ -198,7 +227,6 @@ const styles = StyleSheet.create({
 	scrollView: {
 		width: '100%',
 		backgroundColor: '#828282',
-		paddingHorizontal: '50%',
 	},
 
 	percentItemsContainer: {

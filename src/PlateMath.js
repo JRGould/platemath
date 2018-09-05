@@ -2,15 +2,20 @@ import React from 'react';
 import {
 	StyleSheet,
 	Text,
+	Image,
 	View,
+	SafeAreaView,
 	TouchableHighlight,
 	Vibration,
- } from 'react-native';
+	AsyncStorage,
+	AppState
+ } from 'react-native'
 
 
-import WeightView from './components/WeightView';
-import PercentageSelector from './components/PercentageSelector';
-import WeightCalc from './utils/WeightCalc';
+import WeightView from './components/WeightView'
+import PercentageSelector from './components/PercentageSelector'
+import WeightCalc from './utils/WeightCalc'
+import SettingsDrawer from './components/SettingsDrawer'
 
 const DEFAULT_WEIGHT_RACK = {
 	lb: {
@@ -31,12 +36,12 @@ const DEFAULT_WEIGHT_RACK = {
 		2.5: 6,
 		1  : 6
 	}
-};
+}
 
 const DEFAULT_BAR_WEIGHT = {
 	lb: 45,
 	kg: 20,
-};
+}
 
 class PlateMath extends React.Component {
 
@@ -46,23 +51,77 @@ class PlateMath extends React.Component {
 	constructor(props) {
 		super(props);
 
-		weightSystem = 'lb'; // set here so we can get this out of local storage
+		this.state = this.defaultState;
+		this.restoreState();
 
-		this.state = {
-			weightRacks: { ...DEFAULT_WEIGHT_RACK },
-			barWeights: { ...DEFAULT_BAR_WEIGHT },
-			currentPlates: [],
-			weightSystem: weightSystem,
-			currentWeight: 150,
-			multiplier: 1,
-			showPercentageSelector: true,
-			showConvertedWeight: true,
-		};
+		AppState.addEventListener( "change", this.appStateChanged )
 
+	}
+	
+	defaultState = {
+		weightRacks: { ...DEFAULT_WEIGHT_RACK },
+		barWeights: { ...DEFAULT_BAR_WEIGHT },
+		currentPlates: [],
+		weightSystem: 'lb',
+		currentWeight: 150,
+		multiplier: 1,
+		showPercentageSelector: true,
+		selectedPercent: 100,
+		showConvertedWeight: true,
+		appState: AppState.currentState,
+		settingsDrawerHidden: true
+	}
+	
+	appStateChanged = (appState) => {
+		console.log('APP STATE CHANGED: ', appState)
+		this.setState( {appState} )
+		if ( 'active' === appState) {
+			this.restoreState()
+		}
+	}
+
+	saveState() {
+		console.log('maybe save app state...')
+		clearTimeout( this.saveStateDebounce )
+		this.saveStateDebounce = setTimeout( () => {
+			const state = JSON.stringify(this.state);
+			if( state === this.savedState ) {
+				console.log( 'saved state is same as current state, aborting', state, this.savedState )
+				return;
+			}
+			console.log( 'saving app state...' )
+			AsyncStorage.setItem('PLATEMATH:appState', state).catch( (error) =>  {
+				console.log( 'Error saving app state', error )
+			}).then( () => {
+				console.log('Done!')
+				this.savedState = state
+			})
+		}, 500 );
+	}
+
+	async restoreState() {
+		console.log('restoring app state...')
+		try {
+			const state = Object.assign( this.defaultState, JSON.parse( await AsyncStorage.getItem('PLATEMATH:appState') ) )
+			this.setState( state )
+			console.log( 'app state restored!' )
+			return state
+		} catch (error) {
+			console.log('error retrieving state', error);
+			return false
+		}
+	}
+
+
+	componentWillMount() {
+		console.log('####component will mount')
+		this.restoreState()
 	}
 
 	componentDidMount() {
-		this.updateWeight( this.state.currentWeight );
+		console.log('####component did mount')
+		this.setState({settingsDrawerHidden: false})
+
 	}
 
 	// shouldComponentUpdate( nextProps, nextState ) {
@@ -78,18 +137,18 @@ class PlateMath extends React.Component {
 
 	updateWeight( currentWeight, additionalState = {} ) {
 		const now = Date.now();
-
+		
 		currentWeight = WeightCalc.getClosestAvailableWeight( currentWeight, this.getCurrentBarWeight(), this.getCurrentWeightRack() );
-
+		
 		const minForRack = this.getMinForRack();
 		const maxForRack = this.getMaxForRack();
-
+		
 		if( currentWeight < minForRack ) currentWeight = minForRack;
 		if( currentWeight > maxForRack ) currentWeight = maxForRack;
-
+		
 		const newState = { currentWeight, ...additionalState  };
 		this.setState( { ...newState } )
-
+		this.saveState();
 	}
 
 	incrementWeight = () => {
@@ -122,8 +181,10 @@ class PlateMath extends React.Component {
 	};
 
 
-	applyPercentage = ( multiplier ) => {
-		this.updateWeight( this.state.currentWeight, { multiplier } );
+	applyPercentage = ( selectedPercent ) => {
+		const multiplier = selectedPercent / 100
+		this.setState( {selectedPercent} )
+		this.updateWeight( this.state.currentWeight, { multiplier } )
 	};
 
 	getPlates( currentWeight = null, multiplier = null ) {
@@ -197,9 +258,30 @@ class PlateMath extends React.Component {
 		return ret;
 	}
 
+	executeInRootContext = (callable) => {
+		callable(this)
+	} 
+
 	render() {
 		return (
+
 			<View style={styles.container}>
+				<SafeAreaView 
+					style={{
+						height: 24,
+						flexBasis: 24,
+						width: '100%',
+						display: 'flex',
+						flexDirection: 'row',
+						justifyContent: 'space-between',
+						padding: 20
+					}}
+					 >
+					<View style={{ flex: 1 }} />
+					<TouchableHighlight underlayColor='#ececec' style={{}}  onPress={() => this.setState({settingsDrawerHidden: false})} >
+						<Image source={require('../assets/Settings.png')} style={{ width: 24, height: 24, marginRight: 20}}/>
+					</TouchableHighlight>
+				</SafeAreaView>
 
 				<WeightView
 					weightRack={ this.state.weightRacks[ this.state.weightSystem ] }
@@ -208,12 +290,15 @@ class PlateMath extends React.Component {
 					plates={ this.getPlates().currentPlates }
 				/>
 
+
+				{/*TODO: Refactor this into a standalone component*/}
 				<TouchableHighlight underlayColor='#ececec' style={[styles.buttonRowTH, styles.mainWeighTextDisplay]}  onPress={this.toggleWeightSystem} >
 					<View style={ styles.buttonWeightDisplay}>
 						<Text style={styles.buttonTextWeightDisplay}>{ this.getDisplayWeight( this.state.showPercentageSelector ) }</Text>
 					</View>
 				</TouchableHighlight>
 
+				{/*TODO: Refactor this into a standalone component*/}
 				<View style={ styles.bottomControlContainer }>
 
 					<View style={ styles.buttonRow }>
@@ -250,6 +335,7 @@ class PlateMath extends React.Component {
 					</View>
 
 					<PercentageSelector
+						selectedPercent={this.state.selectedPercent }
 						applyPercentage={ this.applyPercentage }
 						weight={ this.state.currentWeight }
 						style={{ width: '100%', marginTop: 20, marginBottom: 15 }}
@@ -259,8 +345,8 @@ class PlateMath extends React.Component {
 
 				</View>
 
-
-
+				
+				<SettingsDrawer hidden={this.state.settingsDrawerHidden} hide={ () => this.setState({settingsDrawerHidden: true})} exec={this.executeInRootContext} />
 			</View>
 		);
 	}
