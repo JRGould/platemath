@@ -29,7 +29,6 @@ export default class SettingsDrawer extends React.Component {
 	}
 
 	componentWillReceiveProps(nextProps) {
-		console.log( 'will receive props', nextProps )
 		if( 'undefined' !== typeof nextProps.hidden ) {
 			this.showOrHide( nextProps.hidden )
 		}

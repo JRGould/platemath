@@ -72,7 +72,7 @@ class PercentageSelector extends React.Component {
 		}
 	}
 
-	getSelectedPercentX( selectedPercent ) {
+	getSelectedPercentXCoord( selectedPercent ) {
 		const selectedPercentLayout    = this.itemLayouts[ selectedPercent ] || {x: 0, width: 0};
 		const selectedPercentItemX     = selectedPercentLayout.x;
 		const selectedPercentItemWidth = selectedPercentLayout.width;
@@ -80,23 +80,22 @@ class PercentageSelector extends React.Component {
 		const svMinScroll              = 0
 		const scrollViewCenterOffset   = ( this.scrollViewWidth / 2 ) - ( selectedPercentItemWidth / 2 )  +20; //to offset the x box... TODO: need a better solution
 		
-		const x = Math.min( svMaxScroll,
+		const xCoord = Math.min( svMaxScroll,
 				  	Math.max( svMinScroll,
 				  		(selectedPercentItemX||0) -+ (scrollViewCenterOffset||0) )
 				);
-		return x;
+		return xCoord;
 
 	}
 
 	scrollToSelectedPercent( selectedPercent, animated = true ) {
-		console.log( 'scrolling to selected percent', selectedPercent, animated )
 		if( this.scrollViewRef ) {
 			if( animated ) {
 				this.animatingScroll = true;
 				clearTimeout( this.animatingScrollTimeoutObj );
 				this.animatingScrollTimeoutObj = setTimeout( () => this.animatingScroll = false, this.animatingScrollTimeout )
 			}
-			this.scrollViewRef.scrollTo(  { x: this.getSelectedPercentX( selectedPercent ), y: 0, animated: animated } );
+			this.scrollViewRef.scrollTo(  { x: this.getSelectedPercentXCoord( selectedPercent ), y: 0, animated: animated } );
 		}
 	}
 
@@ -172,10 +171,6 @@ class PercentageSelector extends React.Component {
 	render() {
 		return (
 			<View
-			// onMoveShouldSetResponder={ () => true }
-			// onResponderGrant={ this.onResponderGrant }
-			// onResponderMove={ this.onResponderMove }
-			// onResponderRelease={ this.onResponderRelease }
 			style={ StyleSheet.flatten( [ styles.wrap, this.props.style, { height: ( this.state.isVisible ) ? 'auto' : 0 } ] ) }
 			>
 				<ScrollView
@@ -193,7 +188,6 @@ class PercentageSelector extends React.Component {
 					<View style={ styles.percentItemsContainer }
 					onLayout={ (e) => {
 						this.scrollViewContentWidth = e.nativeEvent.layout.width;
-						console.log( e.nativeEvent.layout )
 						setTimeout( () => this.scrollToSelectedPercent( this.state.selectedPercent, false ), 0 );
 					} }
 					>

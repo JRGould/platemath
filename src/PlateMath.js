@@ -15,7 +15,7 @@ import {
 import WeightView from './components/WeightView'
 import PercentageSelector from './components/PercentageSelector'
 import WeightCalc from './utils/WeightCalc'
-import SettingsDrawer from './components/SettingsDrawer'
+// import SettingsDrawer from './components/SettingsDrawer'
 
 const DEFAULT_WEIGHT_RACK = {
 	lb: {
@@ -73,7 +73,6 @@ class PlateMath extends React.Component {
 	}
 	
 	appStateChanged = (appState) => {
-		console.log('APP STATE CHANGED: ', appState)
 		this.setState( {appState} )
 		if ( 'active' === appState) {
 			this.restoreState()
@@ -81,46 +80,37 @@ class PlateMath extends React.Component {
 	}
 
 	saveState() {
-		console.log('maybe save app state...')
 		clearTimeout( this.saveStateDebounce )
 		this.saveStateDebounce = setTimeout( () => {
 			const state = JSON.stringify(this.state);
 			if( state === this.savedState ) {
-				console.log( 'saved state is same as current state, aborting', state, this.savedState )
 				return;
 			}
-			console.log( 'saving app state...' )
 			AsyncStorage.setItem('PLATEMATH:appState', state).catch( (error) =>  {
-				console.log( 'Error saving app state', error )
 			}).then( () => {
-				console.log('Done!')
 				this.savedState = state
 			})
 		}, 500 );
 	}
 
 	async restoreState() {
-		console.log('restoring app state...')
 		try {
-			const state = Object.assign( this.defaultState, JSON.parse( await AsyncStorage.getItem('PLATEMATH:appState') ) )
+			const savedState = await AsyncStorage.getItem('PLATEMATH:appState');
+			const state = Object.assign( this.defaultState, JSON.parse( savedState ) )
 			this.setState( state )
-			console.log( 'app state restored!' )
 			return state
 		} catch (error) {
-			console.log('error retrieving state', error);
 			return false
 		}
 	}
 
 
 	componentWillMount() {
-		console.log('####component will mount')
 		this.restoreState()
 	}
 
 	componentDidMount() {
-		console.log('####component did mount')
-		this.setState({settingsDrawerHidden: false})
+		// this.setState({settingsDrawerHidden: false})
 
 	}
 
@@ -148,7 +138,7 @@ class PlateMath extends React.Component {
 		
 		const newState = { currentWeight, ...additionalState  };
 		this.setState( { ...newState } )
-		this.saveState();
+		// this.saveState();
 	}
 
 	incrementWeight = () => {
@@ -278,9 +268,9 @@ class PlateMath extends React.Component {
 					}}
 					 >
 					<View style={{ flex: 1 }} />
-					<TouchableHighlight underlayColor='#ececec' style={{}}  onPress={() => this.setState({settingsDrawerHidden: false})} >
+					{/* <TouchableHighlight underlayColor='#ececec' style={{}}  onPress={() => this.setState({settingsDrawerHidden: false})} >
 						<Image source={require('../assets/Settings.png')} style={{ width: 24, height: 24, marginRight: 20}}/>
-					</TouchableHighlight>
+					</TouchableHighlight> */}
 				</SafeAreaView>
 
 				<WeightView
@@ -346,7 +336,7 @@ class PlateMath extends React.Component {
 				</View>
 
 				
-				<SettingsDrawer hidden={this.state.settingsDrawerHidden} hide={ () => this.setState({settingsDrawerHidden: true})} exec={this.executeInRootContext} />
+				{/* <SettingsDrawer hidden={this.state.settingsDrawerHidden} hide={ () => this.setState({settingsDrawerHidden: true})} exec={this.executeInRootContext} /> */}
 			</View>
 		);
 	}
