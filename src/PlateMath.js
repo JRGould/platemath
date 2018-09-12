@@ -36,12 +36,14 @@ const DEFAULT_WEIGHT_RACK = {
 		2.5: 6,
 		1  : 6
 	}
-}
+};
 
 const DEFAULT_BAR_WEIGHT = {
 	lb: 45,
 	kg: 20,
-}
+};
+
+const APP_STATE_KEY = 'PLATEMATH:appState';
 
 class PlateMath extends React.Component {
 
@@ -75,7 +77,7 @@ class PlateMath extends React.Component {
 	appStateChanged = (appState) => {
 		this.setState( {appState} )
 		if ( 'active' === appState) {
-			this.restoreState()
+			this.restoreState();
 		}
 	}
 
@@ -86,7 +88,7 @@ class PlateMath extends React.Component {
 			if( state === this.savedState ) {
 				return;
 			}
-			AsyncStorage.setItem('PLATEMATH:appState', state).catch( (error) =>  {
+			AsyncStorage.setItem(APP_STATE_KEY, state).catch( (error) =>  {
 			}).then( () => {
 				this.savedState = state
 			})
@@ -95,7 +97,7 @@ class PlateMath extends React.Component {
 
 	async restoreState() {
 		try {
-			const savedState = await AsyncStorage.getItem('PLATEMATH:appState');
+			const savedState = await AsyncStorage.getItem(APP_STATE_KEY);
 			const state = Object.assign( this.defaultState, JSON.parse( savedState ) )
 			this.setState( state )
 			return state
@@ -138,7 +140,7 @@ class PlateMath extends React.Component {
 		
 		const newState = { currentWeight, ...additionalState  };
 		this.setState( { ...newState } )
-		// this.saveState();
+		this.saveState();
 	}
 
 	incrementWeight = () => {
